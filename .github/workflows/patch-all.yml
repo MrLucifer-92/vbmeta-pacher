@@ -1,0 +1,60 @@
+name: Patch vbmeta & dtbo images
+
+on:
+  push:
+    paths:
+      - 'input/*.img'
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Install tools
+      run: |
+        sudo apt update
+        sudo apt install -y python3-pip zip unzip make device-tree-compiler
+        pip3 install avbtool
+        git clone https://github.com/topjohnwu/magiskboot.git
+        cd magiskboot && make && cd ..
+
+    - name: Create output folder
+      run: mkdir -p output
+
+    - name: Patch vbmeta.img
+      if: ${{ hashFiles('input/vbmeta.img') != '' }}
+      run: |
+        avbtool make_vbmeta_image \
+          --output output/vbmeta_patched.img \
+          --disable_verity \
+          --disable_verification
+
+    - name: Patch vbmeta_system.img
+      if: ${{ hashFiles('input/vbmeta_system.img') != '' }}
+      run: |
+        avbtool make_vbmeta_image \
+          --output output/vbmeta_system_patched.img \
+          --disable_verity \
+          --disable_verification
+
+    - name: Patch dtbo.img
+      if: ${{ hashFiles('input/dtbo.img') != '' }}
+      run: |
+        dtc -I dtb -O dts -o extracted.dts input/dtbo.img
+        sed -i 's/status = "okay"/status = "disabled"/g' extracted.dts || true
+        sed -i 's/enabled = "true"/enabled = "false"/g' extracted.dts || true
+        dtc -I dts -O dtb -o output/dtbo_patched.img extracted.dts
+
+    - name: Zip patched images
+      run: |
+        cd output
+        zip patched_images.zip *.img
+
+    - name: Upload patched ZIP
+      uses: actions/upload-artifact@v4
+      with:
+        name: patched-images
+        path: output/patched_images.zip

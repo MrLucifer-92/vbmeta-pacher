@@ -1,4 +1,4 @@
-name: Patch vbmeta, vbmeta_system, and dtbo
+name: Patch vbmeta and vbmeta_system only
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
     - name: Install tools
       run: |
         sudo apt update
-        sudo apt install -y python3 zip unzip device-tree-compiler coreutils
+        sudo apt install -y python3 zip unzip coreutils
         git clone --depth=1 https://android.googlesource.com/platform/external/avb
         mkdir -p output
 
@@ -35,16 +35,8 @@ jobs:
           --output output/vbmeta_system_patched.img \
           --include_descriptors_from_image input/vbmeta_system.img
 
-    - name: Patch dtbo.img
-      if: ${{ hashFiles('input/dtbo.img') != '' }}
-      run: |
-        dtc -I dtb -O dts -o extracted.dts input/dtbo.img
-        sed -i 's/status = "okay"/status = "disabled"/g' extracted.dts || true
-        sed -i 's/enabled = "true"/enabled = "false"/g' extracted.dts || true
-        dtc -I dts -O dtb -o output/dtbo_patched.img extracted.dts
-
     - name: Upload patched images
       uses: actions/upload-artifact@v4
       with:
-        name: patched-images
+        name: patched-vbmeta
         path: output/*.img

@@ -18,26 +18,22 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y python3 zip unzip device-tree-compiler coreutils
-        git clone --depth=1 https://android.googlesource.com/platform/external/avb
-
-    - name: Create output folder
-      run: mkdir -p output
+        git clone --depth=1 https://github.com/GrapheneOS/avbtool.git
+        mkdir -p output
 
     - name: Patch vbmeta.img
       if: ${{ hashFiles('input/vbmeta.img') != '' }}
       run: |
-        python3 avb/avbtool.py make_vbmeta_image \
+        python3 avbtool/avbtool.py make_vbmeta_image \
           --output output/vbmeta_patched.img \
-          --disable_verity \
-          --disable_verification
+          --include_descriptors_from_image input/vbmeta.img
 
     - name: Patch vbmeta_system.img
       if: ${{ hashFiles('input/vbmeta_system.img') != '' }}
       run: |
-        python3 avb/avbtool.py make_vbmeta_image \
+        python3 avbtool/avbtool.py make_vbmeta_image \
           --output output/vbmeta_system_patched.img \
-          --disable_verity \
-          --disable_verification
+          --include_descriptors_from_image input/vbmeta_system.img
 
     - name: Patch dtbo.img
       if: ${{ hashFiles('input/dtbo.img') != '' }}

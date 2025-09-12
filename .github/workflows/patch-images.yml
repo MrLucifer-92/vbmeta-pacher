@@ -26,7 +26,7 @@ jobs:
     - name: Patch vbmeta.img
       if: ${{ hashFiles('input/vbmeta.img') != '' }}
       run: |
-        python3 external/avb/avbtool.py make_vbmeta_image \
+        python3 avb/avbtool.py make_vbmeta_image \
           --output output/vbmeta_patched.img \
           --disable_verity \
           --disable_verification
@@ -34,7 +34,7 @@ jobs:
     - name: Patch vbmeta_system.img
       if: ${{ hashFiles('input/vbmeta_system.img') != '' }}
       run: |
-        python3 external/avb/avbtool.py make_vbmeta_image \
+        python3 avb/avbtool.py make_vbmeta_image \
           --output output/vbmeta_system_patched.img \
           --disable_verity \
           --disable_verification

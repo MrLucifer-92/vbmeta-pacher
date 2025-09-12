@@ -1,4 +1,4 @@
-name: Patch vbmeta & dtbo images
+name: Patch images and build Odin-flashable tar.md5
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
     - name: Install tools
       run: |
         sudo apt update
-        sudo apt install -y python3-pip zip unzip make device-tree-compiler
+        sudo apt install -y python3-pip zip unzip make device-tree-compiler coreutils
         pip3 install avbtool
         git clone https://github.com/topjohnwu/magiskboot.git
         cd magiskboot && make && cd ..
@@ -48,13 +48,18 @@ jobs:
         sed -i 's/enabled = "true"/enabled = "false"/g' extracted.dts || true
         dtc -I dts -O dtb -o output/dtbo_patched.img extracted.dts
 
-    - name: Zip patched images
+    - name: Build Odin-flashable tar.md5
       run: |
         cd output
-        zip patched_images.zip *.img
+        for img in *.img; do
+          base=$(basename "$img" .img)
+          tar -H ustar -c "$img" > "${base}.tar"
+          md5sum "${base}.tar" | awk '{print $1}' > "${base}.tar.md5"
+          cat "${base}.tar" >> "${base}.tar.md5"
+        done
 
-    - name: Upload patched ZIP
+    - name: Upload Odin tar.md5 files
       uses: actions/upload-artifact@v4
       with:
-        name: patched-images
-        path: output/patched_images.zip
+        name: odin-flashable
+        path: output/*.tar.md5

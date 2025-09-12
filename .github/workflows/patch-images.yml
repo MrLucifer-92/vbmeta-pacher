@@ -1,4 +1,4 @@
-name: Patch images and build Odin tar.md5
+name: Patch vbmeta, vbmeta_system, and dtbo
 
 on:
   push:
@@ -11,16 +11,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
+    - name: Checkout repository
       uses: actions/checkout@v4
 
     - name: Install tools
       run: |
         sudo apt update
-        sudo apt install -y python3 zip unzip make device-tree-compiler coreutils
+        sudo apt install -y python3 zip unzip device-tree-compiler coreutils
         git clone --depth=1 https://android.googlesource.com/platform/external/avb
-        git clone --depth=1 https://github.com/MrLucifer-92/vbmeta-pacher.git magiskboot
-        cd magiskboot && make && cd ..
 
     - name: Create output folder
       run: mkdir -p output
@@ -49,18 +47,8 @@ jobs:
         sed -i 's/enabled = "true"/enabled = "false"/g' extracted.dts || true
         dtc -I dts -O dtb -o output/dtbo_patched.img extracted.dts
 
-    - name: Build Odin tar.md5 files
-      run: |
-        cd output
-        for img in *.img; do
-          base=$(basename "$img" .img)
-          tar -H ustar -c "$img" > "${base}.tar"
-          md5sum "${base}.tar" | awk '{print $1}' > "${base}.tar.md5"
-          cat "${base}.tar" >> "${base}.tar.md5"
-        done
-
-    - name: Upload Odin tar.md5 files
+    - name: Upload patched images
       uses: actions/upload-artifact@v4
       with:
-        name: odin-flashable
-        path: output/*.tar.md5
+        name: patched-images
+        path: output/*.img

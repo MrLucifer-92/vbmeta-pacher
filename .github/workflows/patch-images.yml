@@ -1,9 +1,10 @@
-name: Patch vbmeta, vbmeta_system, and dtbo (Custom Kernel Ready)
+name: Patch vbmeta and vbmeta_system (Custom Script)
 
 on:
   push:
     paths:
       - 'input/**'
+      - 'patch_vbmeta_custom.py'
   workflow_dispatch:
 
 jobs:
@@ -14,39 +15,24 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install tools
+    - name: Prepare environment
       run: |
         sudo apt update
-        sudo apt install -y python3 zip unzip coreutils
-        git clone --depth=1 https://android.googlesource.com/platform/external/avb
+        sudo apt install -y python3
         mkdir -p output
 
     - name: Patch vbmeta.img
       if: ${{ hashFiles('input/vbmeta.img') != '' }}
       run: |
-        python3 avb/avbtool.py make_vbmeta_image \
-          --output output/vbmeta_patched.img \
-          --include_descriptors_from_image input/vbmeta.img \
-          --disable-verity \
-          --disable-verification
+        python3 patch_vbmeta_custom.py input/vbmeta.img output/vbmeta_patched.img
 
     - name: Patch vbmeta_system.img
       if: ${{ hashFiles('input/vbmeta_system.img') != '' }}
       run: |
-        python3 avb/avbtool.py make_vbmeta_image \
-          --output output/vbmeta_system_patched.img \
-          --include_descriptors_from_image input/vbmeta_system.img \
-          --disable-verity \
-          --disable-verification
-
-    - name: Copy dtbo.img (custom kernel)
-      if: ${{ hashFiles('input/dtbo.img') != '' }}
-      run: |
-        cp input/dtbo.img output/dtbo.img
-        echo "dtbo.img copied from custom kernel source."
+        python3 patch_vbmeta_custom.py input/vbmeta_system.img output/vbmeta_system_patched.img
 
     - name: Upload patched images
       uses: actions/upload-artifact@v4
       with:
-        name: patched-for-custom-kernel
+        name: patched-vbmeta
         path: output/*.img

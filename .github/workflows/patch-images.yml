@@ -1,4 +1,4 @@
-name: Patch vbmeta and vbmeta_system only
+name: Patch vbmeta, vbmeta_system, and dtbo (Custom Kernel Ready)
 
 on:
   push:
@@ -26,17 +26,27 @@ jobs:
       run: |
         python3 avb/avbtool.py make_vbmeta_image \
           --output output/vbmeta_patched.img \
-          --include_descriptors_from_image input/vbmeta.img
+          --include_descriptors_from_image input/vbmeta.img \
+          --disable-verity \
+          --disable-verification
 
     - name: Patch vbmeta_system.img
       if: ${{ hashFiles('input/vbmeta_system.img') != '' }}
       run: |
         python3 avb/avbtool.py make_vbmeta_image \
           --output output/vbmeta_system_patched.img \
-          --include_descriptors_from_image input/vbmeta_system.img
+          --include_descriptors_from_image input/vbmeta_system.img \
+          --disable-verity \
+          --disable-verification
+
+    - name: Copy dtbo.img (custom kernel)
+      if: ${{ hashFiles('input/dtbo.img') != '' }}
+      run: |
+        cp input/dtbo.img output/dtbo.img
+        echo "dtbo.img copied from custom kernel source."
 
     - name: Upload patched images
       uses: actions/upload-artifact@v4
       with:
-        name: patched-vbmeta
+        name: patched-for-custom-kernel
         path: output/*.img
